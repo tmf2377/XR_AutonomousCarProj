@@ -50,15 +50,16 @@ public class CarEngine : MonoBehaviour
 
     private void FixedUpdate()
     {
+        //CarStopSensors();
         Sensors();
+        Braking();
         ApplySteer();
         Drive();
         CheckWaypointDistance();
-        Braking();
         LerpToSteerAngle();
     }
 
-    private void Sensors()
+    private void Sensors() // 물체 감지 센서
     {
         RaycastHit hit;
         Vector3 sensorStartPos = transform.position;
@@ -73,74 +74,114 @@ public class CarEngine : MonoBehaviour
         {
             if (!hit.collider.CompareTag("Terrain"))
             {
-                Debug.DrawLine(sensorStartPos, hit.point);
-                avoiding = true;
-                avoidMultiplier -= 1f;
+                if (hit.collider.CompareTag("Car"))
+                {
+                    isBraking = true;
+                    Debug.Log("차감지");
+                }
+                else
+                {
+                    Debug.DrawLine(sensorStartPos, hit.point);
+                    avoiding = true;
+                    avoidMultiplier -= 1f;
+                }
             }
         }
-       
+
         // front right angle sensor
         else if (Physics.Raycast(sensorStartPos, Quaternion.AngleAxis(frontSensorAngle, transform.up) * transform.forward, out hit, sensorLength))
         {
             if (!hit.collider.CompareTag("Terrain"))
             {
-                Debug.DrawLine(sensorStartPos, hit.point);
-                avoiding = true;
-                avoidMultiplier -= 0.5f;
+                if (hit.collider.CompareTag("Car"))
+                {
+                    isBraking = true;
+                    Debug.Log("차감지");
+                }
+                else
+                {
+                    Debug.DrawLine(sensorStartPos, hit.point);
+                    avoiding = true;
+                    avoidMultiplier -= 0.5f;
+                }
             }
         }
 
-        // front left sensor
+        // front left sensor 
         sensorStartPos -= transform.right * frontSideSensorPosition * 2;
         if (Physics.Raycast(sensorStartPos, transform.forward, out hit, sensorLength))
         {
             if (!hit.collider.CompareTag("Terrain"))
             {
-                Debug.DrawLine(sensorStartPos, hit.point);
-                avoiding = true;
-                avoidMultiplier += 1f;
+                if (hit.collider.CompareTag("Car"))
+                {
+                    isBraking = true;
+                    Debug.Log("차감지");
+                }
+                else
+                {
+                    Debug.DrawLine(sensorStartPos, hit.point);
+                    avoiding = true;
+                    avoidMultiplier += 1f;
+                }
             }
         }
-        
+
         // front left angle sensor
         else if (Physics.Raycast(sensorStartPos, Quaternion.AngleAxis(-frontSensorAngle, transform.up) * transform.forward, out hit, sensorLength))
         {
             if (!hit.collider.CompareTag("Terrain"))
             {
-                Debug.DrawLine(sensorStartPos, hit.point);
-                avoiding = true;
-                avoidMultiplier += 0.5f;
+                if (hit.collider.CompareTag("Car"))
+                {
+                    isBraking = true;
+                    Debug.Log("차감지");
+                }
+                else
+                {
+                    Debug.DrawLine(sensorStartPos, hit.point);
+                    avoiding = true;
+                    avoidMultiplier += 0.5f;
+                }
             }
         }
 
-        // front center sensor
-        if(avoidMultiplier == 0)
+        // front center sensor - avoid
+        if (avoidMultiplier == 0)
         {
             if (Physics.Raycast(sensorStartPos, transform.forward, out hit, sensorLength))
             {
                 if (!hit.collider.CompareTag("Terrain"))
                 {
-                    Debug.DrawLine(sensorStartPos, hit.point);
-                    avoiding = true;
-                    // 정면 장애물 회피
-                    if(hit.normal.x < 0)
+                    if (hit.collider.CompareTag("Car"))
                     {
-                        avoidMultiplier = -1;
+                        isBraking = true;
+                        Debug.Log("차감지");
                     }
                     else
                     {
-                        avoidMultiplier = 1;
+                        Debug.DrawLine(sensorStartPos, hit.point);
+                        avoiding = true;
+                        // 정면 장애물 회피
+                        if (hit.normal.x < 0)
+                        {
+                            avoidMultiplier = -1;
+                        }
+                        else
+                        {
+                            avoidMultiplier = 1;
+                        }
                     }
                 }
 
             }
         }
-        
 
         if (avoiding)
         {
             targetSteerAngle = maxSteerAngle * avoidMultiplier;
         }
+
     }
 
     private void ApplySteer() {
@@ -155,6 +196,9 @@ public class CarEngine : MonoBehaviour
     }
 
     private void Drive(){
+        isBraking = false;
+        Debug.Log("차없음");
+
         currentSpeed = 2 * Mathf.PI * wheelFL.radius * wheelFL.rpm * 60 / 1000;
 
         if(currentSpeed < maxSpeed && !isBraking){
